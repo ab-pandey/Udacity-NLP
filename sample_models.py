@@ -172,36 +172,52 @@ def optional_model(input_dim, units, conv_stride,
     print(model.summary())
     return model
 
-def final_model(input_dim, filters, kernel_size, conv_stride,
+def final_model(input_dim, filters, kernel_size, conv_stride, cnn_layers,
     conv_border_mode, units,dilation_rate, pool_size, output_dim=29):
     """ Build a deep network for speech 
     """
     # Main acoustic input
     input_data = Input(name='the_input', shape=(None, input_dim))
     # Apply additive zero-centered Gaussian noise on input data to prevent overfitting
-    gaussian = GaussianNoise(0)(input_data)
+    nn = GaussianNoise(0)(input_data)
+    cnn_activation = 'relu'
+    cnn_dropout = 0.5
+    for i in range(cnn_layers):
+        layer_name='cnn'+str(i)
+        nn= Conv1D(filters, 
+                   kernel_size,
+                   strides=conv_stride,
+                   padding=conv_border_mode,
+                   dilation_rate=dilation_rate,
+                   activation=None,
+                   name=layer_name)(nn)        
+    
+        # Add Batch Normalization, Dropout and Activation
+        nn = BatchNormalization(name='bn_'+layer_name)(nn)
+        nn = Dropout(cnn_dropout,name='drop_'+layer_name)(nn)
+        nn = Activation(cnn_activation, name='act_'+layer_name)(nn)
     # Add convolutional layer
-    conv_1d = Conv1D(filters, kernel_size,
-                     dilation_rate=dilation_rate,
-                     strides=conv_stride,
-                     padding=conv_border_mode,
-                     activation='relu',
-                     name='conv1d')(gaussian)
-    conv_2d = Conv1D(filters, kernel_size,
-                     dilation_rate=dilation_rate,
-                     strides=conv_stride,
-                     padding=conv_border_mode,
-                     activation='relu',
-                     name='conv2d')(conv_1d)
+    #conv_1d = Conv1D(filters, kernel_size,
+     #                dilation_rate=dilation_rate,
+      #               strides=conv_stride,
+       #              padding=conv_border_mode,
+        #             activation='relu',
+         #            name='conv1d')(gaussian)
+    #conv_2d = Conv1D(filters, kernel_size,
+     #                dilation_rate=dilation_rate,
+      #               strides=conv_stride,
+       #              padding=conv_border_mode,
+        #             activation='relu',
+         #            name='conv2d')(conv_1d)
     # Add max pooling layer
-    mp_conv = MaxPooling1D(pool_size=pool_size)(conv_2d)
+    #mp_conv = MaxPooling1D(pool_size=pool_size)(conv_1d)
     # Add batch normalization
-    bn_cnn1 = BatchNormalization(name='bn_conv1d')(mp_conv)
+    #bn_cnn1 = BatchNormalization(name='bn_conv1d')(mp_conv)
     # Dropout
-    drp_conv = Dropout(rate=0.5)(bn_cnn1)
+    #drp_conv = Dropout(rate=0.5)(bn_cnn1)
     
     # BiDirectional RNNs
-    bdrnn1 = Bidirectional(GRU(units, return_sequences=True, implementation=2, name='bdrnn1'))(drp_conv)
+    bdrnn1 = Bidirectional(GRU(units, return_sequences=True, implementation=2, name='bdrnn1'))(nn)
     bn1 = BatchNormalization(name='bn1')(bdrnn1)
     act1 = Activation('relu', name='act1relu')(bn1)
     dropout1 = Dropout(rate=0.5)(act1)
