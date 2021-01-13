@@ -210,7 +210,7 @@ def final_model(input_dim, filters, kernel_size, conv_stride, cnn_layers,
         #             activation='relu',
          #            name='conv2d')(conv_1d)
     # Add max pooling layer
-    #mp_conv = MaxPooling1D(pool_size=pool_size)(conv_1d)
+    nn = MaxPooling1D(pool_size=pool_size)(nn)
     # Add batch normalization
     #bn_cnn1 = BatchNormalization(name='bn_conv1d')(mp_conv)
     # Dropout
@@ -242,7 +242,7 @@ def final_model(input_dim, filters, kernel_size, conv_stride, cnn_layers,
     model = Model(inputs=input_data, outputs=y_pred)
     # TODO: Specify model.output_length
     model.output_length = lambda x: cnn_output_length(x, kernel_size, conv_border_mode,
-                                                      conv_stride, n_conv=2, max_pooling=True,
+                                                      conv_stride, n_conv=cnn_layers, max_pooling=True,
                                                       pool_size=pool_size) 
     print(model.summary())
     return model
